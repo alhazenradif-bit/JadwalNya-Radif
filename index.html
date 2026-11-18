@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>JadwalNya Radif — Sekolah & UTBK</title>
+  
+  <!-- PWA Meta Tags & Manifest -->
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#F97316">
+  <meta name="description" content="Aplikasi pengatur jadwal pelajaran sekolah, pengingat barang bawaan H-1, dan target belajar harian UTBK.">
+  
+  <!-- iOS Safari PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Jadwal Radif">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' width='512' height='512'%3E%3Crect width='512' height='512' rx='128' fill='%23F97316'/%3E%3Cg fill='%23FFFFFF'%3E%3Cpath d='M200 120 C200 70, 312 70, 312 120 L312 140 L200 140 Z' fill='none' stroke='%23FFFFFF' stroke-width='24' stroke-linecap='round'/%3E%3Crect x='136' y='140' width='240' height='270' rx='48' fill='%23FFFFFF'/%3E%3Crect x='168' y='265' width='176' height='120' rx='28' fill='%23EA580C'/%3E%3Crect x='192' y='282' width='128' height='10' rx='5' fill='%23FFFFFF' opacity='0.9'/%3E%3Cpath d='M168 180 L344 180' stroke='%23EA580C' stroke-width='16' stroke-linecap='round'/%3E%3Ccircle cx='256' cy='330' r='14' fill='%23FFFFFF'/%3E%3Cpath d='M230 330 L282 330' stroke='%23FFFFFF' stroke-width='8' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E">
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              orange: '#F97316',
+              'orange-dark': '#EA580C',
+              'orange-light': '#FFF7ED',
+              blue: '#38BDF8',
+              'blue-dark': '#0284C7',
+              'blue-light': '#E0F2FE',
+              bg: '#FFFBF5',
+              dark: '#1C1917',
+              muted: '#78716C',
+              border: '#FED7AA'
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #F8FAFC;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* Hide scrollbars for pill nav */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 antialiased flex justify-center">
+
+  <!-- Mobile App Wrapper -->
+  <div class="w-full max-w-md min-h-screen bg-brand-bg flex flex-col shadow-2xl relative border-x border-orange-100/70 pb-24">
+    
+    <!-- Offline Indicator Banner (Appears only when network disconnects) -->
+    <div id="offlineIndicator" class="hidden bg-slate-900 text-amber-300 text-[11px] font-bold py-1.5 px-3 text-center transition-all duration-300 flex items-center justify-center gap-1.5 sticky top-0 z-40 border-b border-amber-500/30 shadow-md">
+      <span>⚡ Mode Offline</span>
+      <span class="text-slate-300">• Semua jadwal & progres tetap tersimpan aman di HP</span>
+    </div>
+
+    <!-- Top Header -->
+    <header class="bg-gradient-to-r from-brand-orange to-amber-500 text-white px-5 pt-6 pb-5 rounded-b-3xl shadow-lg sticky top-0 z-30">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shadow-inner border border-white/30">
+            🎒
+          </div>
+          <div>
+            <h1 class="text-lg font-extrabold tracking-tight leading-tight">JadwalNya Radif</h1>
+            <p class="text-xs text-orange-100 font-medium" id="headerCurrentDate">Memuat tanggal...</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center gap-1 text-xs bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-white font-semibold border border-white/25">
+            <span class="text-sm">🔥</span>
+            <span id="headerStreakCount">0 Hari</span>
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Containers -->
+    <main class="flex-1 px-4 pt-4 space-y-4">
+
+      <!-- ================= TAB: DASHBOARD (RINGKASAN & H-1) ================= -->
+      <section id="tab-dashboard" class="space-y-4 tab-page">
+        
+        <!-- H-1 Notification / Warning Card -->
+        <div id="h1BannerCard" class="bg-gradient-to-br from-amber-500 via-brand-orange to-orange-600 rounded-2xl p-4 text-white shadow-md relative overflow-hidden transition-all duration-300">
+          <div id="h1WatermarkIcon" class="absolute -right-4 -bottom-6 text-7xl opacity-15 select-none pointer-events-none">🔔</div>
+          <div class="flex items-start gap-3 relative z-10">
+            <div id="h1IconContainer" class="w-9 h-9 rounded-xl bg-white/25 backdrop-blur-sm flex items-center justify-center text-lg shrink-0">
+              🔔
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <span id="h1Badge" class="text-xs font-bold uppercase tracking-wider text-amber-100 bg-black/15 px-2 py-0.5 rounded-full">
+                  Peringatan H-1 Otomatis
+                </span>
+                <span class="text-[11px] text-orange-100 font-medium" id="h1TargetLabel">Persiapan Besok</span>
+              </div>
+              <h2 class="text-base font-bold mt-1 leading-snug" id="h1Title">
+                Besok: Memuat jadwal...
+              </h2>
+              <p class="text-xs text-orange-100 mt-1" id="h1Summary">
+                Periksa barang bawaan dan siapkan tas malam ini.
+              </p>
+            </div>
+          </div>
+
+          <!-- Bawaan Chips -->
+          <div class="mt-3 pt-3 border-t border-white/20 relative z-10">
+            <p class="text-[11px] font-semibold text-amber-100 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+              <span>🎒</span> Bawaan Wajib Besok:
+            </p>
+            <div id="h1BawaanList" class="flex flex-wrap gap-1.5">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Google Calendar & Action Buttons -->
+          <div class="mt-4 pt-2 flex flex-col sm:flex-row gap-2 relative z-10">
+            <button id="btnSaveToGCal" class="flex-1 bg-white hover:bg-orange-50 text-brand-orange text-xs font-bold py-2.5 px-3 rounded-xl shadow transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 border border-white">
+              <svg class="w-4 h-4 fill-current text-sky-500" viewBox="0 0 24 24">
+                <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
+              </svg>
+              <span>Simpan ke Google Calendar</span>
+            </button>
+            <button id="btnDismissH1" class="bg-black/20 hover:bg-black/30 text-white text-xs font-semibold py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1 active:scale-95">
+              <span>Sudah Siap ✓</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- UTBK Mini Countdown Card -->
+        <div class="bg-gradient-to-r from-brand-blue-light via-sky-50 to-white border border-brand-blue/30 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+          <div class="space-y-0.5">
+            <span class="text-[11px] font-bold text-sky-700 uppercase tracking-wider flex items-center gap-1">
+              <span>🎯</span> Target UTBK
+            </span>
+            <div class="flex items-baseline gap-1.5">
+              <span class="text-2xl font-extrabold text-slate-800" id="dashCountdownDays">0</span>
+              <span class="text-xs font-bold text-slate-500">Hari Lagi</span>
+            </div>
+            <p class="text-[11px] text-slate-500" id="dashTargetDate">Target: 21 Juni 2027</p>
+          </div>
+          <button onclick="switchTab('utbk')" class="text-xs bg-white text-sky-600 border border-sky-200 font-bold px-3 py-2 rounded-xl shadow-sm hover:bg-sky-50 transition active:scale-95 flex items-center gap-1">
+            <span>Buka UTBK</span>
+            <span>&rarr;</span>
+          </button>
+        </div>
+
+        <!-- Today's Schedule Quick View -->
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+              <span>📋</span> Jadwal Pelajaran Hari Ini
+            </h3>
+            <span id="dashTodayBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-orange-100 text-brand-orange border border-orange-200">
+              Hari Ini
+            </span>
+          </div>
+
+          <div id="dashTodayMapelContainer" class="space-y-2.5">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ================= TAB: JADWAL SEKOLAH ================= -->
+      <section id="tab-jadwal" class="space-y-4 tab-page hidden">
+        
+        <!-- Day Selector (Pills Senin - Minggu) -->
+        <div class="bg-white p-2 rounded-2xl border border-orange-100 shadow-sm">
+          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-1.5 flex items-center justify-between">
+            <span>Pilih Hari</span>
+            <span class="text-brand-orange">Senin – Minggu</span>
+          </div>
+          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1" id="dayPillsContainer">
+            <!-- Day pills generated by JS -->
+          </div>
+        </div>
+
+        <!-- Active Day Header & Info -->
+        <div class="flex items-center justify-between px-1">
+          <div>
+            <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-1.5" id="activeDayTitle">
+              Jadwal Hari Senin
+            </h2>
+            <p class="text-xs text-slate-500" id="activeDaySubtitle">3 Mata Pelajaran Terjadwal</p>
+          </div>
+          <button onclick="openAddMapelModal()" class="text-xs bg-brand-orange hover:bg-brand-orange-dark text-white font-bold px-3 py-2 rounded-xl shadow-sm transition active:scale-95 flex items-center gap-1">
+            <span>+</span>
+            <span>Tambah Mapel</span>
+          </button>
+        </div>
+
+        <!-- List of Classes for Active Day -->
+        <div id="activeDayMapelList" class="space-y-3">
+          <!-- Rendered dynamically -->
+        </div>
+
+      </section>
+
+      <!-- ================= TAB: UTBK & TARGET ================= -->
+      <section id="tab-utbk" class="space-y-4 tab-page hidden">
+        
+        <!-- Large Countdown Banner -->
+        <div class="bg-gradient-to-br from-slate-900 via-sky-950 to-slate-900 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden border border-sky-800/40">
+          <div class="absolute -right-6 -bottom-6 text-8xl opacity-10 select-none">⏳</div>
+          <div class="relative z-10 flex flex-col items-center text-center">
+            <span class="inline-flex items-center gap-1 text-[11px] font-bold tracking-widest uppercase bg-sky-500/20 text-sky-300 px-3 py-1 rounded-full border border-sky-400/30">
+              ⚡ Countdown Menuju Hari H UTBK
+            </span>
+            <div class="mt-3 flex items-baseline justify-center gap-2">
+              <span class="text-5xl font-black tracking-tight text-white" id="utbkMainCountdown">0</span>
+              <span class="text-lg font-bold text-sky-300">Hari</span>
+            </div>
+            <p class="text-xs text-slate-300 mt-1" id="utbkTargetDateText">Target Pelaksanaan: 21 Juni 2027</p>
+
+            <!-- Streak & Daily Progress Counter -->
+            <div class="w-full mt-4 pt-3 border-t border-slate-700/60 grid grid-cols-2 gap-2 text-center">
+              <div class="bg-white/5 rounded-xl p-2 border border-white/10">
+                <p class="text-[10px] text-slate-400 uppercase font-semibold">Streak Belajar</p>
+                <p class="text-sm font-extrabold text-amber-400 mt-0.5" id="utbkStreakDisplay">🔥 0 Hari</p>
+              </div>
+              <div class="bg-white/5 rounded-xl p-2 border border-white/10">
+                <p class="text-[10px] text-slate-400 uppercase font-semibold">Selesai Hari Ini</p>
+                <p class="text-sm font-extrabold text-brand-blue mt-0.5" id="utbkTodayProgressCount">0 / 0</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress Bar Card -->
+        <div class="bg-white p-3.5 rounded-2xl border border-orange-100 shadow-sm space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-bold text-slate-700">Target Belajar Hari Ini</span>
+            <span class="font-extrabold text-brand-orange" id="utbkProgressPercent">0%</span>
+          </div>
+          <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
+            <div id="utbkProgressBar" class="h-full bg-gradient-to-r from-brand-orange to-brand-blue rounded-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-[11px] text-slate-400">Centang materi yang telah dipelajari</span>
+            <button onclick="resetTodayUtbkProgress()" class="text-[11px] text-slate-500 hover:text-red-500 font-semibold underline">
+              Reset Hari Ini
+            </button>
+          </div>
+        </div>
+
+        <!-- Section 1: TPS -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between px-1">
+            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-brand-orange inline-block"></span>
+              Tes Potensi Skolastik (TPS)
+            </h3>
+            <span class="text-[11px] text-slate-400 font-medium" id="badgeCountTPS">4 Materi</span>
+          </div>
+          <div class="space-y-2" id="utbkListTPS">
+            <!-- TPS items -->
+          </div>
+        </div>
+
+        <!-- Section 2: Literasi -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between px-1">
+            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-brand-blue inline-block"></span>
+              Tes Literasi & Penalaran
+            </h3>
+            <span class="text-[11px] text-slate-400 font-medium" id="badgeCountLiterasi">3 Materi</span>
+          </div>
+          <div class="space-y-2" id="utbkListLiterasi">
+            <!-- Literasi items -->
+          </div>
+        </div>
+
+        <!-- Section 3: Fundamental Challenge -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between px-1">
+            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
+              Fundamental Challenge
+            </h3>
+            <button onclick="openAddChallengeModal()" class="text-[11px] text-brand-orange font-bold hover:underline flex items-center gap-1">
+              <span>+</span>
+              <span>Tambah Challenge</span>
+            </button>
+          </div>
+          <div class="space-y-2" id="utbkListChallenge">
+            <!-- Fundamental Challenge items -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ================= TAB: PENGATURAN ================= -->
+      <section id="tab-pengaturan" class="space-y-4 tab-page hidden">
+        
+        <!-- PWA Install Banner Card -->
+        <div class="bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-4 text-white shadow-sm space-y-2.5" id="pwaInstallCard">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-lg shrink-0">
+                📲
+              </div>
+              <div>
+                <h3 class="text-xs font-bold leading-tight">Instal di Layar Utama HP</h3>
+                <p class="text-[10px] text-orange-100 mt-0.5">Buka lebih cepat & tetap bisa offline di sekolah</p>
+              </div>
+            </div>
+            <button id="btnInstallPwa" class="bg-white hover:bg-orange-50 text-brand-orange text-xs font-bold py-2 px-3.5 rounded-xl shadow-sm transition active:scale-95 flex items-center gap-1 shrink-0">
+              <span>Pasang ⬇️</span>
+            </button>
+          </div>
+          <div id="iosInstallHint" class="hidden text-[10px] bg-black/15 p-2 rounded-xl text-orange-100 leading-relaxed border border-white/10">
+            💡 <strong>Untuk Pengguna iPhone / iPad:</strong> Tekan tombol <strong>Bagikan (Share) ⎋</strong> di Safari, lalu pilih <strong>'Add to Home Screen ➕'</strong>.
+          </div>
+        </div>
+
+        <!-- Target Date Setting -->
+        <div class="bg-white rounded-2xl p-4 border border-orange-100 shadow-sm space-y-3">
+          <h2 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+            <span>⚙️</span> Pengaturan Target UTBK
+          </h2>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal Hari H UTBK</label>
+            <input type="date" id="inputTargetDate" class="w-full text-xs font-medium border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-brand-orange">
+          </div>
+          <button onclick="saveUtbkTargetDate()" class="w-full bg-brand-orange hover:bg-brand-orange-dark text-white text-xs font-bold py-2.5 rounded-xl transition shadow-sm active:scale-95">
+            Simpan Tanggal Target
+          </button>
+        </div>
+
+        <!-- LocalStorage Data Management -->
+        <div class="bg-white rounded-2xl p-4 border border-orange-100 shadow-sm space-y-3">
+          <h2 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+            <span>💾</span> Manajemen Data (LocalStorage)
+          </h2>
+          <p class="text-xs text-slate-500">
+            Seluruh data jadwal & progres UTBK tersimpan aman di perangkat Anda secara offline tanpa perlu akun/login.
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+            <button onclick="exportDataJson()" class="border border-brand-orange/40 text-brand-orange hover:bg-orange-50 text-xs font-bold py-2.5 px-2 rounded-xl transition shadow-xs active:scale-95">
+              Export Data (.json)
+            </button>
+            <button onclick="clearAllSchedules()" class="border border-amber-300 bg-amber-50/50 text-amber-800 hover:bg-amber-100 text-xs font-bold py-2.5 px-2 rounded-xl transition shadow-xs active:scale-95" title="Hapus semua mata pelajaran untuk mulai mengisi jadwal sendiri">
+              Kosongkan Semua Jadwal
+            </button>
+            <button onclick="resetToDummyData()" class="border border-red-200 text-red-500 hover:bg-red-50 text-xs font-bold py-2.5 px-2 rounded-xl transition shadow-xs active:scale-95">
+              Reset Dummy Data
+            </button>
+          </div>
+        </div>
+
+        <div class="text-center py-4 text-xs text-slate-400">
+          <p class="font-bold text-slate-500">JadwalNya Radif v1.1 (PWA Ready)</p>
+          <p class="mt-0.5">Mobile-First School Schedule & UTBK Companion</p>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Navigation Bar (Sticky Mobile Nav) -->
+    <nav class="fixed bottom-0 w-full max-w-md bg-white/90 backdrop-blur-md border-t border-orange-100/90 py-2 px-3 z-40 flex items-center justify-around shadow-lg">
+      
+      <!-- Nav Button: Dashboard -->
+      <button onclick="switchTab('dashboard')" id="nav-btn-dashboard" class="nav-btn flex flex-col items-center justify-center flex-1 py-1 text-brand-orange transition-all">
+        <span class="text-lg">🏠</span>
+        <span class="text-[10px] font-bold mt-0.5">Hari Ini</span>
+      </button>
+
+      <!-- Nav Button: Jadwal -->
+      <button onclick="switchTab('jadwal')" id="nav-btn-jadwal" class="nav-btn flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-slate-600 transition-all">
+        <span class="text-lg">📅</span>
+        <span class="text-[10px] font-bold mt-0.5">Jadwal 7 Hari</span>
+      </button>
+
+      <!-- Nav Button: UTBK -->
+      <button onclick="switchTab('utbk')" id="nav-btn-utbk" class="nav-btn flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-slate-600 transition-all">
+        <span class="text-lg">📚</span>
+        <span class="text-[10px] font-bold mt-0.5">Latihan UTBK</span>
+      </button>
+
+      <!-- Nav Button: Pengaturan -->
+      <button onclick="switchTab('pengaturan')" id="nav-btn-pengaturan" class="nav-btn flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-slate-600 transition-all">
+        <span class="text-lg">⚙️</span>
+        <span class="text-[10px] font-bold mt-0.5">Pengaturan</span>
+      </button>
+
+    </nav>
+
+    <!-- Modal: Tambah & Edit Mapel -->
+    <div id="modalAddMapel" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center px-4 hidden">
+      <div class="bg-white rounded-2xl w-full max-w-sm p-5 space-y-3 shadow-xl">
+        <div class="flex items-center justify-between border-b pb-2">
+          <h3 class="text-sm font-bold text-slate-800" id="modalMapelTitle">Tambah Mata Pelajaran</h3>
+          <button onclick="closeAddMapelModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+        </div>
+        <div class="space-y-2 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Hari</label>
+            <select id="inputMapelHari" class="w-full border border-slate-200 rounded-xl p-2.5 focus:border-brand-orange outline-none">
+              <option value="senin">Senin</option>
+              <option value="selasa">Selasa</option>
+              <option value="rabu">Rabu</option>
+              <option value="kamis">Kamis</option>
+              <option value="jumat">Jumat</option>
+              <option value="sabtu">Sabtu</option>
+              <option value="minggu">Minggu</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Nama Mata Pelajaran</label>
+            <input type="text" id="inputMapelNama" placeholder="Contoh: Kimia" class="w-full border border-slate-200 rounded-xl p-2.5 focus:border-brand-orange outline-none">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-semibold text-slate-600 mb-1">Jam Mulai</label>
+              <input type="time" id="inputMapelJamMulai" value="07:00" class="w-full border border-slate-200 rounded-xl p-2 focus:border-brand-orange outline-none">
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-600 mb-1">Jam Selesai</label>
+              <input type="time" id="inputMapelJamSelesai" value="08:30" class="w-full border border-slate-200 rounded-xl p-2 focus:border-brand-orange outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Daftar Buku / Barang Bawaan (Pisahkan koma)</label>
+            <input type="text" id="inputMapelBawaan" placeholder="Buku Paket, Jas Lab, Penggaris" class="w-full border border-slate-200 rounded-xl p-2.5 focus:border-brand-orange outline-none">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Catatan / PR (Opsional)</label>
+            <textarea id="inputMapelCatatan" rows="2" placeholder="PR latihan bab 3" class="w-full border border-slate-200 rounded-xl p-2 focus:border-brand-orange outline-none"></textarea>
+          </div>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button onclick="closeAddMapelModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 rounded-xl">Batal</button>
+          <button onclick="saveMapelForm()" id="btnSubmitMapel" class="flex-1 bg-brand-orange hover:bg-brand-orange-dark text-white text-xs font-bold py-2.5 rounded-xl">Simpan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Tambah Fundamental Challenge -->
+    <div id="modalAddChallenge" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center px-4 hidden">
+      <div class="bg-white rounded-2xl w-full max-w-sm p-5 space-y-3 shadow-xl">
+        <div class="flex items-center justify-between border-b pb-2">
+          <h3 class="text-sm font-bold text-slate-800">Tambah Fundamental Challenge</h3>
+          <button onclick="closeAddChallengeModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+        </div>
+        <div class="space-y-2 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Topik Challenge</label>
+            <input type="text" id="inputChallengeNama" placeholder="Contoh: Silogisme & Logika Proposisi" class="w-full border border-slate-200 rounded-xl p-2.5 focus:border-brand-orange outline-none">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Deskripsi / Target Tugas</label>
+            <textarea id="inputChallengeDeskripsi" rows="3" placeholder="Selesaikan 30 soal silogisme tanpa salah dalam 25 menit" class="w-full border border-slate-200 rounded-xl p-2.5 focus:border-brand-orange outline-none"></textarea>
+          </div>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button onclick="closeAddChallengeModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 rounded-xl">Batal</button>
+          <button onclick="saveNewChallenge()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold py-2.5 rounded-xl">Tambahkan</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Application Logic & LocalStorage Management -->
+  <script>
+    // Constants
+    const STORAGE_KEY = 'jadwalnya_radif_data';
+    const DAYS_ORDER = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
+    const DAY_LABELS = {
+      senin: 'Senin',
+      selasa: 'Selasa',
+      rabu: 'Rabu',
+      kamis: 'Kamis',
+      jumat: 'Jumat',
+      sabtu: 'Sabtu',
+      minggu: 'Minggu'
+    };
+
+    // Default Dummy Data
+    const DEFAULT_DATA = {
+      jadwal: {
+        senin: [
+          { id: 'm1', mapel: 'Upacara Bendera', jam_mulai: '07:00', jam_selesai: '07:45', bawaan: ['Topi Upacara', 'Dasi Seragam'], catatan: 'Wajib berpakaian rapi dan lengkap' },
+          { id: 'm2', mapel: 'Matematika Wajib', jam_mulai: '07:45', jam_selesai: '09:15', bawaan: ['Buku Paket MTK', 'Buku Catatan Kotak', 'Penggaris 30cm'], catatan: 'Kumpulkan PR matriks hal 42' },
+          { id: 'm3', mapel: 'Fisika', jam_mulai: '09:30', jam_selesai: '11:00', bawaan: ['Buku Fisika Erlangga', 'Kalkulator Ilmiah'], catatan: 'Materi gelombang mekanik' },
+          { id: 'm4', mapel: 'Bahasa Indonesia', jam_mulai: '11:00', jam_selesai: '12:30', bawaan: ['Buku Catatan', 'Modul Teks Artikel'], catatan: '' }
+        ],
+        selasa: [
+          { id: 'm5', mapel: 'Kimia', jam_mulai: '07:00', jam_selesai: '08:30', bawaan: ['Buku Catatan Kimia', 'Jas Praktikum Lab', 'Tabel Periodik'], catatan: 'Ada praktikum asam basa di lab' },
+          { id: 'm6', mapel: 'Bahasa Inggris', jam_mulai: '08:30', jam_selesai: '10:00', bawaan: ['Kamus Saku', 'Buku Kerja Siswa'], catatan: 'Speaking presentation kelompok' },
+          { id: 'm7', mapel: 'Biologi', jam_mulai: '10:15', jam_selesai: '11:45', bawaan: ['Buku Gambar/Atlas Biologi', 'Pensil Warna'], catatan: 'Membahas sistem ekskresi manusia' },
+          { id: 'm8', mapel: 'Pendidikan Agama', jam_mulai: '12:30', jam_selesai: '14:00', bawaan: ['Buku Agama', 'Kitab Suci'], catatan: '' }
+        ],
+        rabu: [
+          { id: 'm9', mapel: 'Penjaskes (Olahraga)', jam_mulai: '07:00', jam_selesai: '08:30', bawaan: ['Baju Kaos Olahraga', 'Sepatu Kets', 'Tumbler Air'], catatan: 'Penilaian lari 12 menit di lapangan' },
+          { id: 'm10', mapel: 'Sejarah Indonesia', jam_mulai: '08:45', jam_selesai: '10:15', bawaan: ['Buku Catatan Sejarah'], catatan: 'Review masa kemerdekaan' },
+          { id: 'm11', mapel: 'Matematika Peminatan', jam_mulai: '10:30', jam_selesai: '12:00', bawaan: ['Buku MTK Lanjut', 'Jangka Lengkap'], catatan: 'Latihan rumus turunan trigonometri' }
+        ],
+        kamis: [
+          { id: 'm12', mapel: 'Sosiologi / PKn', jam_mulai: '07:00', jam_selesai: '08:30', bawaan: ['Buku Paket PKn'], catatan: 'Tugas resume makalah kelompok' },
+          { id: 'm13', mapel: 'Informatika & Komputer', jam_mulai: '08:30', jam_selesai: '10:00', bawaan: ['Flashdisk', 'Buku Catatan Coding'], catatan: 'Praktik lab komputer algoritma dasar' },
+          { id: 'm14', mapel: 'Seni Budaya', jam_mulai: '10:15', jam_selesai: '11:45', bawaan: ['Buku Sketsa A4', 'Pensil 2B & Penghapus'], catatan: 'Proyek menggambar perspektif' }
+        ],
+        jumat: [
+          { id: 'm15', mapel: 'Bimbingan Konseling & Karir', jam_mulai: '07:00', jam_selesai: '08:00', bawaan: ['Buku Agenda Jurusan UTBK'], catatan: 'Konsultasi pemilihan jurusan kuliah' },
+          { id: 'm16', mapel: 'Prakarya & Kewirausahaan', jam_mulai: '08:00', jam_selesai: '09:30', bawaan: ['Sampel Produk Kelompok'], catatan: 'Evaluasi ide usaha' },
+          { id: 'm17', mapel: 'Kajian Rohani / Ibadah', jam_mulai: '10:00', jam_selesai: '11:30', bawaan: ['Perlengkapan Ibadah Bersih'], catatan: 'Wajib sebelum istirahat siang' }
+        ],
+        sabtu: [
+          { id: 'm18', mapel: 'Ekstrakurikuler Wajib', jam_mulai: '07:30', jam_selesai: '09:30', bawaan: ['Seragam Ekskul', 'Buku Kehadiran'], catatan: 'Kegiatan ekskul pilihan semester ini' },
+          { id: 'm19', mapel: 'Klinik Belajar UTBK Sekolah', jam_mulai: '10:00', jam_selesai: '12:00', bawaan: ['Buku Soal Latihan TPS', 'Stopwatch/HP'], catatan: 'Simulasi mini try out 40 soal' }
+        ],
+        minggu: [
+          { id: 'm20', mapel: 'Sesi Evaluasi Mandiri Radif', jam_mulai: '09:00', jam_selesai: '11:00', bawaan: ['Binder Review Soal UTBK'], catatan: 'Catat kelemahan soal try out pekan lalu' },
+          { id: 'm21', mapel: 'Persiapan Tas Sekolah Senin', jam_mulai: '19:00', jam_selesai: '19:30', bawaan: ['Periksa semua buku Senin'], catatan: 'Cek seragam upacara dan dasi' }
+        ]
+      },
+      tugas_selesai: {
+        'm2': true // Contoh bawaan: PR Matematika sudah selesai
+      },
+      utbk: {
+        tanggal_target: '2027-06-21',
+        materi: [
+          // TPS
+          { id: 'u1', kategori: 'TPS', nama: 'Penalaran Umum (PU)', deskripsi: 'Pola induktif, deduktif, dan pemahaman argumen logika', is_custom: false },
+          { id: 'u2', kategori: 'TPS', nama: 'Pengetahuan & Pemahaman Umum (PPU)', deskripsi: 'Kosakata, idiom, makna kata bertingkat & konteks kalimat', is_custom: false },
+          { id: 'u3', kategori: 'TPS', nama: 'Kemampuan Memahami Bacaan & Menulis (PBM)', deskripsi: 'PUEBI, kalimat efektif, konjungsi & struktur paragraf', is_custom: false },
+          { id: 'u4', kategori: 'TPS', nama: 'Pengetahuan Kuantitatif (PK)', deskripsi: 'Aljabar, geometri dasar, statistika & aritmetika logika', is_custom: false },
+          // Literasi
+          { id: 'u5', kategori: 'Literasi', nama: 'Literasi Bahasa Indonesia', deskripsi: 'Analisis teks naratif, argumentatif & sintesis informasi', is_custom: false },
+          { id: 'u6', kategori: 'Literasi', nama: 'Literasi Bahasa Inggris', deskripsi: 'Reading comprehension, main ideas, tone of author & inferences', is_custom: false },
+          { id: 'u7', kategori: 'Literasi', nama: 'Penalaran Matematika (PM)', deskripsi: 'Pemecahan masalah berbasis konteks nyata & pemodelan angka', is_custom: false },
+          // Fundamental Challenge (Customizable)
+          { id: 'u8', kategori: 'Fundamental Challenge', nama: 'Speedrun 50 Soal Deret Angka', deskripsi: 'Selesaikan 50 soal pola bilangan dalam 20 menit tanpa bantuan kalkulator.', is_custom: true },
+          { id: 'u9', kategori: 'Fundamental Challenge', nama: 'Bedah Trik Silogisme & Kuantor', deskripsi: 'Pahami premis mayor, minor, implikasi p->q, dan ekuivalensi ~q->~p.', is_custom: true }
+        ],
+        progres: {}, // 'YYYY-MM-DD': ['u1', 'u4']
+        streak: 0
+      },
+      pengaturan: {
+        h1_dismissed: {}
+      }
+    };
+
+    // State
+    let appData = null;
+    let currentActiveDay = 'senin';
+    let editingMapelContext = null; // { hari: 'senin', id: 'm1' } atau null
+
+    // Helper: Format Date string YYYY-MM-DD
+    function getTodayString() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    // Helper: Map day index (0=Sunday ... 6=Saturday) to day name
+    function getDayKey(dateObj) {
+      const dayIndex = dateObj.getDay();
+      const map = ['minggu', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
+      return map[dayIndex];
+    }
+
+    // Dynamic Streak Calculation
+    function calculateStreak() {
+      if (!appData || !appData.utbk || !appData.utbk.progres) return 0;
+      
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+
+      function getDateKey(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const date = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${date}`;
+      }
+
+      function hasProgress(d) {
+        const k = getDateKey(d);
+        const list = appData.utbk.progres[k];
+        return Array.isArray(list) && list.length > 0;
+      }
+
+      const todayDone = hasProgress(now);
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
+      const yesterdayDone = hasProgress(yesterday);
+
+      // Jika hari ini belum selesai DAN kemarin juga tidak ada progres, streak reset ke 0
+      if (!todayDone && !yesterdayDone) {
+        return 0;
+      }
+
+      let streak = 0;
+      let check = new Date(now);
+      if (!todayDone) {
+        // Belum ada materi selesai hari ini, hitung streak yang masih bertahan dari kemarin
+        check = yesterday;
+      }
+
+      while (hasProgress(check)) {
+        streak++;
+        check.setDate(check.getDate() - 1);
+      }
+
+      return streak;
+    }
+
+    // Setup initial dummy progress for realistic demo streak
+    function setupInitialStreakDummy() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      function getDateKey(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const date = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${date}`;
+      }
+      // Berikan histori 4 hari sebelumnya agar ada streak berjalan
+      for (let i = 1; i <= 4; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        appData.utbk.progres[getDateKey(d)] = ['u1', 'u5'];
+      }
+    }
+
+    // Load Data
+    function initData() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try {
+          appData = JSON.parse(raw);
+        } catch (e) {
+          console.error("Gagal parse localStorage, reset ke default", e);
+          appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+          setupInitialStreakDummy();
+          saveData();
+        }
+      } else {
+        appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        setupInitialStreakDummy();
+        saveData();
+      }
+
+      // Pastikan struktur data lengkap
+      if (!appData.tugas_selesai) {
+        appData.tugas_selesai = { 'm2': true };
+      }
+      if (!appData.pengaturan) {
+        appData.pengaturan = {};
+      }
+      if (!appData.pengaturan.h1_dismissed) {
+        appData.pengaturan.h1_dismissed = {};
+      }
+      if (!appData.utbk.progres) {
+        appData.utbk.progres = {};
+      }
+
+      // Hitung streak dinamis
+      appData.utbk.streak = calculateStreak();
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+    }
+
+    function resetToDummyData() {
+      if (confirm("Reset semua data ke data contoh bawaan? Seluruh perubahan Anda akan diganti dengan data awal.")) {
+        localStorage.removeItem(STORAGE_KEY);
+        initData();
+        renderAll();
+        alert("Data berhasil direset ke contoh bawaan!");
+      }
+    }
+
+    // Opsi Mulai dari Nol (Kosongkan Jadwal)
+    function clearAllSchedules() {
+      if (confirm("Kosongkan semua jadwal pelajaran (Senin–Minggu)?\n\nSemua jadwal contoh akan dihapus agar Anda bisa mulai mengisi jadwal asli sekolah Anda dari awal tanpa menghapus satu per satu.")) {
+        DAYS_ORDER.forEach(day => {
+          appData.jadwal[day] = [];
+        });
+        appData.tugas_selesai = {};
+        saveData();
+        renderAll();
+        alert("Semua jadwal pelajaran telah dikosongkan. Silakan mulai tambahkan jadwal sekolah asli Anda!");
+      }
+    }
+
+    function exportDataJson() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `JadwalNya_Radif_${getTodayString()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    // Tab Switching
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-page').forEach(el => el.classList.add('hidden'));
+      const activeEl = document.getElementById(`tab-${tabName}`);
+      if (activeEl) activeEl.classList.remove('hidden');
+
+      // Update Nav Buttons
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('text-brand-orange');
+        btn.classList.add('text-slate-400');
+      });
+      const currentNavBtn = document.getElementById(`nav-btn-${tabName}`);
+      if (currentNavBtn) {
+        currentNavBtn.classList.remove('text-slate-400');
+        currentNavBtn.classList.add('text-brand-orange');
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Render Header & Date
+    function renderHeader() {
+      const now = new Date();
+      const options = { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' };
+      document.getElementById('headerCurrentDate').innerText = now.toLocaleDateString('id-ID', options);
+      
+      // Update dynamic streak count in header
+      const dynamicStreak = calculateStreak();
+      document.getElementById('headerStreakCount').innerText = `${dynamicStreak} Hari`;
+    }
+
+    // Render H-1 Banner & Google Calendar URL (With LocalStorage Persistent Dismiss)
+    function renderH1Banner() {
+      const now = new Date();
+      const todayKey = getDayKey(now);
+      const todayIndex = DAYS_ORDER.indexOf(todayKey);
+      const tomorrowIndex = (todayIndex + 1) % DAYS_ORDER.length;
+      const tomorrowKey = DAYS_ORDER[tomorrowIndex];
+      const tomorrowLabel = DAY_LABELS[tomorrowKey];
+
+      const tomorrowMapels = appData.jadwal[tomorrowKey] || [];
+      const totalMapel = tomorrowMapels.length;
+
+      const todayStr = getTodayString();
+      const isDismissed = Boolean(appData.pengaturan && appData.pengaturan.h1_dismissed && appData.pengaturan.h1_dismissed[todayStr]);
+
+      const bannerCard = document.getElementById('h1BannerCard');
+      const watermark = document.getElementById('h1WatermarkIcon');
+      const iconContainer = document.getElementById('h1IconContainer');
+      const badge = document.getElementById('h1Badge');
+      const summary = document.getElementById('h1Summary');
+      const title = document.getElementById('h1Title');
+      const dismissBtn = document.getElementById('btnDismissH1');
+
+      document.getElementById('h1TargetLabel').innerText = `Besok (${tomorrowLabel})`;
+
+      // Ambil semua bawaan unik
+      const uniqueBawaan = new Set();
+      tomorrowMapels.forEach(m => {
+        if (m.bawaan && Array.isArray(m.bawaan)) {
+          m.bawaan.forEach(b => uniqueBawaan.add(b.trim()));
+        }
+      });
+
+      const bawaanContainer = document.getElementById('h1BawaanList');
+      bawaanContainer.innerHTML = '';
+
+      if (uniqueBawaan.size === 0) {
+        bawaanContainer.innerHTML = `<span class="text-xs bg-white/20 text-white px-2.5 py-0.5 rounded-lg">Tidak ada perlengkapan khusus</span>`;
+      } else {
+        uniqueBawaan.forEach(item => {
+          const chip = document.createElement('span');
+          chip.className = 'text-[11px] bg-white text-slate-800 font-semibold px-2 py-0.5 rounded-md shadow-xs';
+          chip.innerText = item;
+          bawaanContainer.appendChild(chip);
+        });
+      }
+
+      // Tampilan Banner: Hijau Tenang (jika sudah siap) vs Orange Peringatan
+      if (isDismissed) {
+        bannerCard.className = "bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 rounded-2xl p-4 text-white shadow-md relative overflow-hidden transition-all duration-300";
+        watermark.innerText = "✅";
+        iconContainer.innerText = "✅";
+        badge.className = "text-xs font-bold uppercase tracking-wider text-emerald-100 bg-black/15 px-2 py-0.5 rounded-full";
+        badge.innerText = "Tas Besok Sudah Siap!";
+        title.innerText = `Tas Besok (${tomorrowLabel}) Sudah Siap! ✓`;
+        summary.innerText = `Kesiapan untuk ${totalMapel} mata pelajaran besok telah selesai. Selamat beristirahat!`;
+        dismissBtn.innerHTML = `<span>Batal / Edit Kesiapan</span>`;
+        dismissBtn.className = "bg-white/20 hover:bg-white/30 text-white text-xs font-semibold py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1 active:scale-95";
+        dismissBtn.onclick = () => {
+          delete appData.pengaturan.h1_dismissed[todayStr];
+          saveData();
+          renderH1Banner();
+        };
+      } else {
+        bannerCard.className = "bg-gradient-to-br from-amber-500 via-brand-orange to-orange-600 rounded-2xl p-4 text-white shadow-md relative overflow-hidden transition-all duration-300";
+        watermark.innerText = "🔔";
+        iconContainer.innerText = "🔔";
+        badge.className = "text-xs font-bold uppercase tracking-wider text-amber-100 bg-black/15 px-2 py-0.5 rounded-full";
+        badge.innerText = "Peringatan H-1 Otomatis";
+        title.innerText = `Besok ${tomorrowLabel}: Ada ${totalMapel} Mata Pelajaran`;
+        summary.innerText = "Periksa barang bawaan dan siapkan tas malam ini.";
+        dismissBtn.innerHTML = `<span>Sudah Siap ✓</span>`;
+        dismissBtn.className = "bg-black/20 hover:bg-black/30 text-white text-xs font-semibold py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1 active:scale-95";
+        dismissBtn.onclick = () => {
+          if (!appData.pengaturan.h1_dismissed) {
+            appData.pengaturan.h1_dismissed = {};
+          }
+          appData.pengaturan.h1_dismissed[todayStr] = true;
+          saveData();
+          renderH1Banner();
+        };
+      }
+
+      // Generate Google Calendar URL untuk semua mapel besok
+      const gcalBtn = document.getElementById('btnSaveToGCal');
+      const eventTitle = `🎒 Persiapan Tas Besok (${tomorrowLabel}) — JadwalNya Radif`;
+      
+      let detailsText = `JADWAL MAPEL BESOK (${tomorrowLabel.toUpperCase()}):\n`;
+      tomorrowMapels.forEach((m, idx) => {
+        detailsText += `${idx + 1}. ${m.mapel} (${m.jam_mulai} - ${m.jam_selesai})\n`;
+        if (m.bawaan && m.bawaan.length > 0) {
+          detailsText += `   Perlengkapan: ${m.bawaan.join(', ')}\n`;
+        }
+        if (m.catatan) {
+          detailsText += `   Catatan: ${m.catatan}\n`;
+        }
+      });
+
+      detailsText += `\nDAFTAR BARANG YANG WAJIB MASUK TAS MALAM INI:\n`;
+      Array.from(uniqueBawaan).forEach(b => {
+        detailsText += `[ ] ${b}\n`;
+      });
+      detailsText += `\nPengingat otomatis dari aplikasi JadwalNya Radif.`;
+
+      // Buat tanggal hari ini jam 19:00 - 19:30
+      const eventStart = new Date(now);
+      eventStart.setHours(19, 0, 0, 0);
+      const eventEnd = new Date(now);
+      eventEnd.setHours(19, 30, 0, 0);
+
+      const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&details=${encodeURIComponent(detailsText)}&dates=${formatLocalGCalDate(eventStart)}/${formatLocalGCalDate(eventEnd)}`;
+
+      gcalBtn.onclick = () => {
+        window.open(gcalUrl, '_blank');
+      };
+    }
+
+    // Date Helper for Google Calendar
+    function getNextDateForDay(dayKey) {
+      const dayIndices = { minggu: 0, senin: 1, selasa: 2, rabu: 3, kamis: 4, jumat: 5, sabtu: 6 };
+      const targetIdx = dayIndices[dayKey.toLowerCase()] !== undefined ? dayIndices[dayKey.toLowerCase()] : 1;
+      const now = new Date();
+      const currentIdx = now.getDay();
+      let diff = (targetIdx - currentIdx + 7) % 7;
+      const targetDate = new Date(now);
+      targetDate.setDate(now.getDate() + diff);
+      return targetDate;
+    }
+
+    function formatLocalGCalDate(d) {
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+    }
+
+    // Google Calendar URL Generator for Single Mapel
+    function openGCalForMapel(dayKey, mapelId) {
+      const dayMapels = appData.jadwal[dayKey] || [];
+      const mapel = dayMapels.find(m => m.id === mapelId);
+      if (!mapel) return;
+
+      const targetDate = getNextDateForDay(dayKey);
+      const [startH, startM] = (mapel.jam_mulai || '07:00').split(':').map(Number);
+      const [endH, endM] = (mapel.jam_selesai || '08:30').split(':').map(Number);
+
+      const startDate = new Date(targetDate);
+      startDate.setHours(isNaN(startH) ? 7 : startH, isNaN(startM) ? 0 : startM, 0, 0);
+
+      const endDate = new Date(targetDate);
+      endDate.setHours(isNaN(endH) ? 8 : endH, isNaN(endM) ? 30 : endM, 0, 0);
+
+      const dayLabel = DAY_LABELS[dayKey] || dayKey;
+      const title = `📘 ${mapel.mapel} (${mapel.jam_mulai || '07:00'} - ${mapel.jam_selesai || '08:30'})`;
+
+      let details = `JADWAL MATA PELAJARAN: ${mapel.mapel}\n`;
+      details += `Hari: ${dayLabel}\n`;
+      details += `Waktu Belajar: ${mapel.jam_mulai || '07:00'} - ${mapel.jam_selesai || '08:30'}\n\n`;
+
+      if (mapel.bawaan && mapel.bawaan.length > 0) {
+        details += `🎒 PERLENGKAPAN & BARANG BAWAAN:\n`;
+        mapel.bawaan.forEach(b => {
+          details += `[ ] ${b}\n`;
+        });
+        details += `\n`;
+      }
+
+      if (mapel.catatan) {
+        details += `📝 TUGAS & CATATAN PENTING:\n${mapel.catatan}\n\n`;
+      }
+
+      const isDone = appData.tugas_selesai && appData.tugas_selesai[mapel.id];
+      details += `Status Tugas: ${isDone ? 'Sudah Selesai Dikerjakan ✓' : 'Belum Selesai'}\n`;
+      details += `\nPengingat otomatis dari jadwal sekolah 'JadwalNya Radif'.`;
+
+      const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&details=${encodeURIComponent(details)}&dates=${formatLocalGCalDate(startDate)}/${formatLocalGCalDate(endDate)}`;
+
+      window.open(gcalUrl, '_blank');
+    }
+
+    // Toggle Task Checklist
+    function toggleTugasCheck(mapelId) {
+      if (!appData.tugas_selesai) {
+        appData.tugas_selesai = {};
+      }
+      appData.tugas_selesai[mapelId] = !appData.tugas_selesai[mapelId];
+      saveData();
+      renderJadwalTab();
+      renderDashboardToday();
+    }
+
+    // Render Dashboard Today's Mapel
+    function renderDashboardToday() {
+      const now = new Date();
+      const todayKey = getDayKey(now);
+      const todayLabel = DAY_LABELS[todayKey];
+      document.getElementById('dashTodayBadge').innerText = `Hari Ini (${todayLabel})`;
+
+      const mapels = appData.jadwal[todayKey] || [];
+      const container = document.getElementById('dashTodayMapelContainer');
+      container.innerHTML = '';
+
+      if (mapels.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white p-6 rounded-3xl text-center border-2 border-dashed border-orange-200/80 shadow-xs space-y-2.5">
+            <div class="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200/60 mx-auto flex items-center justify-center text-2xl">
+              ☕
+            </div>
+            <div class="space-y-0.5">
+              <h4 class="text-xs font-bold text-slate-700">Tidak ada jadwal pelajaran hari ini</h4>
+              <p class="text-[11px] text-slate-400">Selamat beristirahat atau gunakan waktu untuk latihan materi UTBK!</p>
+            </div>
+            <button onclick="openAddMapelModal('${todayKey}')" class="text-xs text-brand-orange font-bold hover:underline inline-flex items-center gap-1">
+              <span>+</span> <span>Tambah Jadwal Hari Ini</span>
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      mapels.forEach(m => {
+        const isDone = Boolean(appData.tugas_selesai && appData.tugas_selesai[m.id]);
+        const card = document.createElement('div');
+        card.className = `p-3.5 rounded-2xl border shadow-xs flex flex-col gap-2.5 transition ${
+          isDone 
+            ? 'bg-emerald-50/40 border-emerald-300' 
+            : 'bg-white border-orange-100/80 hover:border-brand-orange/40'
+        }`;
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] font-bold tracking-wider ${isDone ? 'text-emerald-700' : 'text-slate-400'} uppercase">
+                  ⏰ ${m.jam_mulai || '07:00'} - ${m.jam_selesai || '08:30'}
+                </span>
+                ${isDone ? `
+                  <span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded-full">
+                    Selesai ✓
+                  </span>
+                ` : ''}
+              </div>
+              <h4 class="text-sm font-bold leading-tight ${isDone ? 'line-through text-slate-400' : 'text-slate-800'}">
+                ${m.mapel}
+              </h4>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs px-2 py-0.5 rounded-md bg-brand-blue-light text-brand-blue-dark font-bold">
+                ${m.bawaan ? m.bawaan.length : 0} Bawaan
+              </span>
+              <button onclick="openEditMapelModal('${todayKey}', '${m.id}')" class="text-xs font-bold text-slate-400 hover:text-brand-orange p-1 transition" title="Edit Mapel Ini">
+                ✏️
+              </button>
+            </div>
+          </div>
+
+          ${m.bawaan && m.bawaan.length > 0 ? `
+            <div class="flex flex-wrap gap-1">
+              ${m.bawaan.map(b => `<span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-medium ${isDone ? 'opacity-70' : ''}">📦 ${b}</span>`).join('')}
+            </div>
+          ` : ''}
+
+          <!-- Checklist Tugas Hari Ini -->
+          <div class="p-2.5 rounded-xl border flex items-start gap-2.5 text-xs transition ${
+            isDone ? 'bg-emerald-100/50 border-emerald-200 text-emerald-900' : 'bg-orange-50/70 border-orange-100 text-orange-950'
+          }">
+            <input type="checkbox" id="dash-chk-${m.id}" ${isDone ? 'checked' : ''}
+              onchange="toggleTugasCheck('${m.id}')"
+              class="w-4 h-4 mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 accent-emerald-600 cursor-pointer">
+            <div class="flex-1">
+              <label for="dash-chk-${m.id}" class="cursor-pointer font-bold block leading-tight ${isDone ? 'line-through text-slate-500' : 'text-slate-800'}">
+                ${m.catatan ? `Tugas: ${m.catatan}` : `Persiapan ${m.mapel}`}
+              </label>
+              <span class="text-[10px] ${isDone ? 'text-emerald-700 font-bold' : 'text-slate-500'} mt-0.5 block">
+                ${isDone ? '✓ Tugas sudah dilaksanakan' : 'Ceklist jika tugas sudah selesai'}
+              </span>
+            </div>
+          </div>
+
+          <!-- Individual GCal Button & Action -->
+          <div class="pt-1.5 border-t border-slate-100 flex items-center justify-between">
+            <button onclick="openGCalForMapel('${todayKey}', '${m.id}')" 
+              class="inline-flex items-center gap-1.5 text-xs font-bold text-sky-700 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 border border-sky-200/80 px-2.5 py-1 rounded-lg transition active:scale-95"
+              title="Simpan slot mapel ini ke Google Calendar">
+              <svg class="w-3.5 h-3.5 fill-current text-sky-500" viewBox="0 0 24 24">
+                <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
+              </svg>
+              <span>+ Google Calendar</span>
+            </button>
+            <button onclick="toggleTugasCheck('${m.id}')" class="text-[11px] font-bold text-slate-500 hover:text-brand-orange transition">
+              ${isDone ? 'Batal Centang' : 'Tandai Selesai ✓'}
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Render Jadwal Tab: Day Pills & Active Day Mapel
+    function renderJadwalTab() {
+      const pillsContainer = document.getElementById('dayPillsContainer');
+      pillsContainer.innerHTML = '';
+
+      const now = new Date();
+      const actualTodayKey = getDayKey(now);
+
+      DAYS_ORDER.forEach(day => {
+        const pill = document.createElement('button');
+        const isActive = day === currentActiveDay;
+        const isToday = day === actualTodayKey;
+
+        pill.className = `px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all ${
+          isActive 
+            ? 'bg-brand-orange text-white shadow-sm' 
+            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+        }`;
+        pill.innerHTML = `
+          <span>${DAY_LABELS[day]}</span>
+          ${isToday ? `<span class="inline-block w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : 'bg-brand-orange'} ml-1"></span>` : ''}
+        `;
+        pill.onclick = () => {
+          currentActiveDay = day;
+          renderJadwalTab();
+        };
+        pillsContainer.appendChild(pill);
+      });
+
+      // Update Active Day Header with Task Progress
+      const mapels = appData.jadwal[currentActiveDay] || [];
+      const totalMapel = mapels.length;
+      const doneCount = mapels.filter(m => appData.tugas_selesai && appData.tugas_selesai[m.id]).length;
+
+      document.getElementById('activeDayTitle').innerText = `Jadwal Hari ${DAY_LABELS[currentActiveDay]}`;
+      document.getElementById('activeDaySubtitle').innerHTML = `
+        <span>${totalMapel} Mapel Terjadwal</span>
+        <span class="mx-1">•</span>
+        <span class="${doneCount === totalMapel && totalMapel > 0 ? 'text-emerald-600 font-bold' : 'text-brand-orange font-bold'}">
+          ${doneCount}/${totalMapel} Tugas Selesai
+        </span>
+      `;
+
+      // Render Cards / Empty State
+      const listContainer = document.getElementById('activeDayMapelList');
+      listContainer.innerHTML = '';
+
+      // Tampilan Empty State yang Halus & Interaktif
+      if (mapels.length === 0) {
+        listContainer.innerHTML = `
+          <div class="bg-white p-7 rounded-3xl text-center border-2 border-dashed border-orange-200/80 shadow-xs space-y-3 my-2">
+            <div class="w-16 h-16 rounded-3xl bg-orange-50 border border-orange-200/60 mx-auto flex items-center justify-center text-3xl shadow-inner">
+              📚
+            </div>
+            <div class="space-y-1">
+              <h3 class="text-sm font-extrabold text-slate-800">Jadwal Hari ${DAY_LABELS[currentActiveDay]} Masih Kosong</h3>
+              <p class="text-xs text-slate-500 max-w-[260px] mx-auto leading-relaxed">
+                Belum ada mata pelajaran yang terjadwal. Mulai tambahkan mata pelajaran pertama Anda sekarang!
+              </p>
+            </div>
+            <div class="pt-1">
+              <button onclick="openAddMapelModal('${currentActiveDay}')" class="bg-gradient-to-r from-brand-orange to-amber-500 hover:from-brand-orange-dark hover:to-amber-600 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-md transition-all active:scale-95 inline-flex items-center gap-1.5">
+                <span class="text-sm font-extrabold">+</span>
+                <span>Tambah Pelajaran Pertama</span>
+              </button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      mapels.forEach((m, idx) => {
+        const isDone = Boolean(appData.tugas_selesai && appData.tugas_selesai[m.id]);
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-2xl border transition-all space-y-3 relative ${
+          isDone 
+            ? 'bg-emerald-50/40 border-emerald-300 shadow-xs' 
+            : 'bg-white border-orange-100 shadow-xs hover:border-orange-200'
+        }`;
+
+        card.innerHTML = `
+          <!-- Top Row: Time, Subject, Done Badge, Edit & Delete -->
+          <div class="flex items-start justify-between gap-2">
+            <div class="space-y-0.5 flex-1">
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] font-bold ${isDone ? 'text-emerald-700' : 'text-brand-orange'} tracking-wide flex items-center gap-1">
+                  <span>⏰</span> ${m.jam_mulai || '07:00'} - ${m.jam_selesai || '08:30'}
+                </span>
+                ${isDone ? `
+                  <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                    <span>✓</span> Selesai
+                  </span>
+                ` : ''}
+              </div>
+              <h3 class="text-base font-extrabold ${isDone ? 'line-through text-slate-400' : 'text-slate-800'}">
+                ${m.mapel}
+              </h3>
+            </div>
+            <div class="flex items-center gap-1">
+              <!-- Tombol Edit Jadwal Mapel -->
+              <button onclick="openEditMapelModal('${currentActiveDay}', '${m.id}')" 
+                class="text-xs font-bold text-slate-600 hover:text-brand-orange bg-slate-100 hover:bg-orange-50 border border-slate-200 px-2 py-1 rounded-lg transition flex items-center gap-1 active:scale-95" 
+                title="Edit Mapel Ini">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                <span>Edit</span>
+              </button>
+              <!-- Tombol Hapus -->
+              <button onclick="deleteMapel('${currentActiveDay}', '${m.id}')" class="text-slate-300 hover:text-red-500 text-lg leading-none p-1 transition" title="Hapus Mapel">
+                &times;
+              </button>
+            </div>
+          </div>
+
+          <!-- Bawaan Section -->
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+              Bawaan & Perlengkapan:
+            </span>
+            <div class="flex flex-wrap gap-1.5">
+              ${m.bawaan && m.bawaan.length > 0 
+                ? m.bawaan.map(b => `
+                    <span class="inline-flex items-center gap-1 text-[11px] bg-sky-50 text-sky-700 border border-sky-200/80 font-medium px-2 py-0.5 rounded-lg ${isDone ? 'opacity-70' : ''}">
+                      <span>📘</span> ${b}
+                    </span>
+                  `).join('')
+                : `<span class="text-xs text-slate-400 italic">Tidak ada bawaan khusus</span>`
+              }
+            </div>
+          </div>
+
+          <!-- Tugas / Catatan Checklist Section -->
+          <div class="p-2.5 rounded-xl border flex items-start gap-2.5 transition ${
+            isDone 
+              ? 'bg-emerald-100/50 border-emerald-200 text-emerald-900' 
+              : 'bg-amber-50/70 border-amber-200/80 text-amber-950'
+          }">
+            <input type="checkbox" id="chk-task-${m.id}" ${isDone ? 'checked' : ''}
+              onchange="toggleTugasCheck('${m.id}')"
+              class="w-4 h-4 mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 accent-emerald-600 cursor-pointer">
+            <div class="flex-1">
+              <label for="chk-task-${m.id}" class="text-xs font-bold cursor-pointer block ${isDone ? 'line-through text-slate-500' : 'text-slate-800'}">
+                ${m.catatan ? `Tugas: ${m.catatan}` : `Persiapan & Tugas Mapel Ini`}
+              </label>
+              <span class="text-[10px] ${isDone ? 'text-emerald-700 font-bold' : 'text-slate-500'} mt-0.5 block">
+                ${isDone ? '✓ Tugas / Pelajaran sudah dilaksanakan' : 'Klik kotak untuk ceklist jika tugas sudah selesai'}
+              </span>
+            </div>
+          </div>
+
+          <!-- Bottom Actions: Individual Google Calendar Button -->
+          <div class="pt-2 border-t border-slate-100/90 flex items-center justify-between gap-2">
+            <button onclick="openGCalForMapel('${currentActiveDay}', '${m.id}')" 
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200/90 transition shadow-xs active:scale-95"
+              title="Simpan jadwal mapel ini ke Google Calendar dengan jam terpisah">
+              <svg class="w-3.5 h-3.5 fill-current text-sky-500" viewBox="0 0 24 24">
+                <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
+              </svg>
+              <span>+ Google Calendar</span>
+            </button>
+            
+            <button onclick="toggleTugasCheck('${m.id}')" class="text-xs font-bold px-2.5 py-1 rounded-lg transition ${
+              isDone 
+                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' 
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }">
+              ${isDone ? 'Batal Ceklist' : 'Ceklist Selesai ✓'}
+            </button>
+          </div>
+        `;
+        listContainer.appendChild(card);
+      });
+    }
+
+    // Render UTBK Tab: Countdown, Checklist TPS, Literasi, Fundamental Challenge
+    function renderUtbkTab() {
+      // Countdown Calculation
+      const targetStr = appData.utbk.tanggal_target || '2027-06-21';
+      document.getElementById('inputTargetDate').value = targetStr;
+      
+      const targetDate = new Date(targetStr);
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      targetDate.setHours(0, 0, 0, 0);
+
+      const diffTime = targetDate - now;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      const countdownVal = diffDays > 0 ? diffDays : 0;
+      document.getElementById('utbkMainCountdown').innerText = countdownVal;
+      document.getElementById('dashCountdownDays').innerText = countdownVal;
+
+      const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+      const formattedTarget = targetDate.toLocaleDateString('id-ID', options);
+      document.getElementById('utbkTargetDateText').innerText = `Target Pelaksanaan: ${formattedTarget}`;
+      document.getElementById('dashTargetDate').innerText = `Target: ${formattedTarget}`;
+
+      // Progress Checklist
+      const today = getTodayString();
+      const completedList = appData.utbk.progres[today] || [];
+      const allMateri = appData.utbk.materi || [];
+
+      const totalCount = allMateri.length;
+      const completedCount = completedList.length;
+      const percent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+      // Hitung streak dinamis
+      const dynamicStreak = calculateStreak();
+      appData.utbk.streak = dynamicStreak;
+
+      document.getElementById('utbkTodayProgressCount').innerText = `${completedCount} / ${totalCount}`;
+      document.getElementById('utbkProgressPercent').innerText = `${percent}%`;
+      document.getElementById('utbkProgressBar').style.width = `${percent}%`;
+      document.getElementById('utbkStreakDisplay').innerText = `🔥 ${dynamicStreak} Hari`;
+
+      // Filter by Category
+      const tpsItems = allMateri.filter(m => m.kategori === 'TPS');
+      const literasiItems = allMateri.filter(m => m.kategori === 'Literasi');
+      const challengeItems = allMateri.filter(m => m.kategori === 'Fundamental Challenge');
+
+      document.getElementById('badgeCountTPS').innerText = `${tpsItems.length} Materi`;
+      document.getElementById('badgeCountLiterasi').innerText = `${literasiItems.length} Materi`;
+
+      renderUtbkSection('utbkListTPS', tpsItems, completedList);
+      renderUtbkSection('utbkListLiterasi', literasiItems, completedList);
+      renderUtbkSection('utbkListChallenge', challengeItems, completedList, true);
+    }
+
+    function renderUtbkSection(containerId, items, completedList, isChallenge = false) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white p-3 rounded-xl border border-slate-100 text-center text-xs text-slate-400">
+            Belum ada materi di bagian ini.
+          </div>
+        `;
+        return;
+      }
+
+      items.forEach(item => {
+        const isChecked = completedList.includes(item.id);
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-2xl border transition-all ${
+          isChecked 
+            ? 'bg-emerald-50/60 border-emerald-200' 
+            : 'bg-white border-orange-100/90 shadow-xs'
+        }`;
+
+        card.innerHTML = `
+          <div class="flex items-start gap-3">
+            <input type="checkbox" id="chk-${item.id}" ${isChecked ? 'checked' : ''} 
+              onchange="toggleMateriCheck('${item.id}')"
+              class="w-4 h-4 mt-1 rounded text-brand-orange focus:ring-brand-orange border-slate-300 accent-brand-orange cursor-pointer">
+            <div class="flex-1">
+              <label for="chk-${item.id}" class="text-xs font-bold cursor-pointer ${isChecked ? 'line-through text-slate-400' : 'text-slate-800'}">
+                ${item.nama}
+              </label>
+              ${item.deskripsi ? `
+                <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed ${isChecked ? 'text-slate-400' : ''}">
+                  ${item.deskripsi}
+                </p>
+              ` : ''}
+            </div>
+            ${item.is_custom ? `
+              <button onclick="deleteChallenge('${item.id}')" class="text-slate-300 hover:text-red-500 text-xs p-1" title="Hapus Challenge">
+                &times;
+              </button>
+            ` : ''}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Toggle Checklist UTBK (Dynamic Streak Update)
+    function toggleMateriCheck(id) {
+      const today = getTodayString();
+      if (!appData.utbk.progres[today]) {
+        appData.utbk.progres[today] = [];
+      }
+
+      const list = appData.utbk.progres[today];
+      const index = list.indexOf(id);
+      if (index >= 0) {
+        list.splice(index, 1);
+      } else {
+        list.push(id);
+      }
+
+      // Update streak dinamis
+      appData.utbk.streak = calculateStreak();
+
+      saveData();
+      renderHeader();
+      renderUtbkTab();
+    }
+
+    function resetTodayUtbkProgress() {
+      const today = getTodayString();
+      if (confirm("Reset centang progres UTBK untuk hari ini?")) {
+        appData.utbk.progres[today] = [];
+        appData.utbk.streak = calculateStreak();
+        saveData();
+        renderHeader();
+        renderUtbkTab();
+      }
+    }
+
+    // Modal Add & Edit Mapel
+    function openAddMapelModal(defaultDay) {
+      editingMapelContext = null;
+      document.getElementById('modalMapelTitle').innerText = 'Tambah Mata Pelajaran';
+      document.getElementById('btnSubmitMapel').innerText = 'Simpan';
+
+      if (defaultDay) {
+        document.getElementById('inputMapelHari').value = defaultDay;
+      } else {
+        document.getElementById('inputMapelHari').value = currentActiveDay;
+      }
+      document.getElementById('inputMapelNama').value = '';
+      document.getElementById('inputMapelJamMulai').value = '07:00';
+      document.getElementById('inputMapelJamSelesai').value = '08:30';
+      document.getElementById('inputMapelBawaan').value = '';
+      document.getElementById('inputMapelCatatan').value = '';
+      document.getElementById('modalAddMapel').classList.remove('hidden');
+    }
+
+    function openEditMapelModal(hari, id) {
+      const mapels = appData.jadwal[hari] || [];
+      const mapel = mapels.find(m => m.id === id);
+      if (!mapel) return;
+
+      editingMapelContext = { hari, id };
+      document.getElementById('modalMapelTitle').innerText = 'Edit Mata Pelajaran';
+      document.getElementById('btnSubmitMapel').innerText = 'Simpan Perubahan';
+
+      document.getElementById('inputMapelHari').value = hari;
+      document.getElementById('inputMapelNama').value = mapel.mapel || '';
+      document.getElementById('inputMapelJamMulai').value = mapel.jam_mulai || '07:00';
+      document.getElementById('inputMapelJamSelesai').value = mapel.jam_selesai || '08:30';
+      document.getElementById('inputMapelBawaan').value = (mapel.bawaan || []).join(', ');
+      document.getElementById('inputMapelCatatan').value = mapel.catatan || '';
+      document.getElementById('modalAddMapel').classList.remove('hidden');
+    }
+
+    function closeAddMapelModal() {
+      editingMapelContext = null;
+      document.getElementById('modalAddMapel').classList.add('hidden');
+    }
+
+    // Save Mapel (Handles both Add & Edit)
+    function saveMapelForm() {
+      const hari = document.getElementById('inputMapelHari').value;
+      const nama = document.getElementById('inputMapelNama').value.trim();
+      const jamMulai = document.getElementById('inputMapelJamMulai').value;
+      const jamSelesai = document.getElementById('inputMapelJamSelesai').value;
+      const bawaanRaw = document.getElementById('inputMapelBawaan').value.trim();
+      const catatan = document.getElementById('inputMapelCatatan').value.trim();
+
+      if (!nama) {
+        alert("Nama mata pelajaran harus diisi!");
+        return;
+      }
+
+      const bawaanList = bawaanRaw ? bawaanRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+      if (editingMapelContext) {
+        // Mode Edit Mapel
+        const oldHari = editingMapelContext.hari;
+        const mapelId = editingMapelContext.id;
+
+        if (!appData.jadwal[oldHari]) appData.jadwal[oldHari] = [];
+        const index = appData.jadwal[oldHari].findIndex(m => m.id === mapelId);
+
+        const updatedItem = {
+          id: mapelId,
+          mapel: nama,
+          jam_mulai: jamMulai,
+          jam_selesai: jamSelesai,
+          bawaan: bawaanList,
+          catatan: catatan
+        };
+
+        if (oldHari === hari) {
+          if (index >= 0) {
+            appData.jadwal[oldHari][index] = updatedItem;
+          } else {
+            appData.jadwal[oldHari].push(updatedItem);
+          }
+        } else {
+          // Jika hari dipindah
+          if (index >= 0) {
+            appData.jadwal[oldHari].splice(index, 1);
+          }
+          if (!appData.jadwal[hari]) appData.jadwal[hari] = [];
+          appData.jadwal[hari].push(updatedItem);
+        }
+      } else {
+        // Mode Tambah Baru
+        const newId = 'm_' + Date.now();
+        const newEntry = {
+          id: newId,
+          mapel: nama,
+          jam_mulai: jamMulai,
+          jam_selesai: jamSelesai,
+          bawaan: bawaanList,
+          catatan: catatan
+        };
+
+        if (!appData.jadwal[hari]) {
+          appData.jadwal[hari] = [];
+        }
+        appData.jadwal[hari].push(newEntry);
+      }
+
+      saveData();
+      closeAddMapelModal();
+      currentActiveDay = hari;
+      renderAll();
+    }
+
+    function deleteMapel(hari, id) {
+      if (confirm("Hapus mata pelajaran ini?")) {
+        appData.jadwal[hari] = appData.jadwal[hari].filter(m => m.id !== id);
+        if (appData.tugas_selesai && appData.tugas_selesai[id]) {
+          delete appData.tugas_selesai[id];
+        }
+        saveData();
+        renderAll();
+      }
+    }
+
+    // Modal Add Fundamental Challenge
+    function openAddChallengeModal() {
+      document.getElementById('inputChallengeNama').value = '';
+      document.getElementById('inputChallengeDeskripsi').value = '';
+      document.getElementById('modalAddChallenge').classList.remove('hidden');
+    }
+
+    function closeAddChallengeModal() {
+      document.getElementById('modalAddChallenge').classList.add('hidden');
+    }
+
+    function saveNewChallenge() {
+      const nama = document.getElementById('inputChallengeNama').value.trim();
+      const deskripsi = document.getElementById('inputChallengeDeskripsi').value.trim();
+
+      if (!nama) {
+        alert("Topik challenge harus diisi!");
+        return;
+      }
+
+      const newId = 'u_' + Date.now();
+      appData.utbk.materi.push({
+        id: newId,
+        kategori: 'Fundamental Challenge',
+        nama: nama,
+        deskripsi: deskripsi,
+        is_custom: true
+      });
+
+      saveData();
+      closeAddChallengeModal();
+      renderUtbkTab();
+    }
+
+    function deleteChallenge(id) {
+      if (confirm("Hapus Fundamental Challenge ini?")) {
+        appData.utbk.materi = appData.utbk.materi.filter(m => m.id !== id);
+        saveData();
+        renderUtbkTab();
+      }
+    }
+
+    // Save UTBK Target Date
+    function saveUtbkTargetDate() {
+      const val = document.getElementById('inputTargetDate').value;
+      if (!val) {
+        alert("Pilih tanggal target yang valid!");
+        return;
+      }
+      appData.utbk.tanggal_target = val;
+      saveData();
+      renderUtbkTab();
+      alert("Tanggal target UTBK berhasil disimpan!");
+    }
+
+    // Render Master Function
+    function renderAll() {
+      renderHeader();
+      renderH1Banner();
+      renderDashboardToday();
+      renderJadwalTab();
+      renderUtbkTab();
+    }
+
+    // Online/Offline Detection
+    function updateOnlineStatus() {
+      const indicator = document.getElementById('offlineIndicator');
+      if (indicator) {
+        if (navigator.onLine) {
+          indicator.classList.add('hidden');
+        } else {
+          indicator.classList.remove('hidden');
+        }
+      }
+    }
+
+    // PWA Installation Logic
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Cegah mini-infobar browser default
+      e.preventDefault();
+      deferredPrompt = e;
+      
+      const btnInstall = document.getElementById('btnInstallPwa');
+      if (btnInstall) {
+        btnInstall.classList.remove('opacity-50');
+      }
+    });
+
+    window.addEventListener('appinstalled', () => {
+      console.log('[PWA] Aplikasi berhasil dipasang ke Home Screen!');
+      deferredPrompt = null;
+      const btnInstall = document.getElementById('btnInstallPwa');
+      if (btnInstall) {
+        btnInstall.innerHTML = '<span>Terpasang ✓</span>';
+        btnInstall.classList.add('bg-emerald-100', 'text-emerald-700');
+        btnInstall.classList.remove('text-brand-orange');
+      }
+    });
+
+    function setupPwaInstallButton() {
+      const btnInstall = document.getElementById('btnInstallPwa');
+      const iosHint = document.getElementById('iosInstallHint');
+
+      // Deteksi iOS Safari
+      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+      if (isIos && !isStandalone && iosHint) {
+        iosHint.classList.remove('hidden');
+      }
+
+      if (isStandalone && btnInstall) {
+        btnInstall.innerHTML = '<span>Terpasang ✓</span>';
+        btnInstall.classList.add('bg-emerald-100', 'text-emerald-700');
+        btnInstall.classList.remove('text-brand-orange');
+      }
+
+      if (btnInstall) {
+        btnInstall.addEventListener('click', async () => {
+          if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log('[PWA] Pilihan instalasi pengguna:', outcome);
+            deferredPrompt = null;
+          } else {
+            if (isIos) {
+              alert("Untuk memasang di iPhone/iPad:\n1. Tekan tombol Bagikan (Share) ⎋ di bar Safari bawah.\n2. Gulir dan pilih 'Add to Home Screen ➕'.");
+            } else {
+              alert("Untuk memasang di Android/Chrome:\nBuka menu titik tiga ⋮ di pojok kanan atas browser Anda, lalu pilih 'Install app' atau 'Tambahkan ke Layar Utama'.");
+            }
+          }
+        });
+      }
+    }
+
+    // On Load & Service Worker Registration
+    window.addEventListener('DOMContentLoaded', () => {
+      // Inisialisasi active day ke hari ini
+      const todayKey = getDayKey(new Date());
+      currentActiveDay = todayKey;
+
+      initData();
+      renderAll();
+
+      // Monitor status koneksi online/offline
+      updateOnlineStatus();
+      window.addEventListener('online', updateOnlineStatus);
+      window.addEventListener('offline', updateOnlineStatus);
+
+      // Setup tombol PWA
+      setupPwaInstallButton();
+
+      // Registrasi Service Worker untuk Offline Support
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then((reg) => {
+              console.log('[SW] Service Worker terdaftar sukses dengan scope:', reg.scope);
+            })
+            .catch((err) => {
+              console.error('[SW] Pendaftaran Service Worker gagal:', err);
+            });
+        });
+      }
+    });
+  </script>
+</body>
+</html>

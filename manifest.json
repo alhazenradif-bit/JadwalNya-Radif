@@ -1,0 +1,25 @@
+{
+  "name": "JadwalNya Radif — Manajemen Sekolah & UTBK",
+  "short_name": "Jadwal Radif",
+  "description": "Aplikasi pengatur jadwal pelajaran sekolah, pengingat barang bawaan H-1, dan target belajar harian UTBK.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFBF5",
+  "theme_color": "#F97316",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' width='192' height='192'%3E%3Crect width='512' height='512' rx='128' fill='%23F97316'/%3E%3Cg fill='%23FFFFFF'%3E%3Cpath d='M200 120 C200 70, 312 70, 312 120 L312 140 L200 140 Z' fill='none' stroke='%23FFFFFF' stroke-width='24' stroke-linecap='round'/%3E%3Crect x='136' y='140' width='240' height='270' rx='48' fill='%23FFFFFF'/%3E%3Crect x='168' y='265' width='176' height='120' rx='28' fill='%23EA580C'/%3E%3Crect x='192' y='282' width='128' height='10' rx='5' fill='%23FFFFFF' opacity='0.9'/%3E%3Cpath d='M168 180 L344 180' stroke='%23EA580C' stroke-width='16' stroke-linecap='round'/%3E%3Ccircle cx='256' cy='330' r='14' fill='%23FFFFFF'/%3E%3Cpath d='M230 330 L282 330' stroke='%23FFFFFF' stroke-width='8' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' width='512' height='512'%3E%3Crect width='512' height='512' rx='128' fill='%23F97316'/%3E%3Cg fill='%23FFFFFF'%3E%3Cpath d='M200 120 C200 70, 312 70, 312 120 L312 140 L200 140 Z' fill='none' stroke='%23FFFFFF' stroke-width='24' stroke-linecap='round'/%3E%3Crect x='136' y='140' width='240' height='270' rx='48' fill='%23FFFFFF'/%3E%3Crect x='168' y='265' width='176' height='120' rx='28' fill='%23EA580C'/%3E%3Crect x='192' y='282' width='128' height='10' rx='5' fill='%23FFFFFF' opacity='0.9'/%3E%3Cpath d='M168 180 L344 180' stroke='%23EA580C' stroke-width='16' stroke-linecap='round'/%3E%3Ccircle cx='256' cy='330' r='14' fill='%23FFFFFF'/%3E%3Cpath d='M230 330 L282 330' stroke='%23FFFFFF' stroke-width='8' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
